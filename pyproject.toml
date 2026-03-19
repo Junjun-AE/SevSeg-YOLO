@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=70.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sevseg-yolo"
+dynamic = ["version"]
+description = "SevSeg-YOLO: Unified Detection, Severity Scoring, and Annotation-Free Approximate Segmentation for Industrial Defects"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { "text" = "AGPL-3.0" }
+keywords = [
+    "defect-detection", "severity-scoring", "industrial-inspection",
+    "YOLO", "YOLO26", "computer-vision", "deep-learning",
+    "anomaly-detection", "quality-control", "mask-generation",
+]
+authors = [
+    { name = "SevSeg-YOLO Contributors" },
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Image Recognition",
+]
+
+dependencies = [
+    "numpy>=1.23.0",
+    "matplotlib>=3.3.0",
+    "opencv-python>=4.6.0",
+    "pillow>=7.1.2",
+    "pyyaml>=5.3.1",
+    "torch>=1.8.0",
+    "torchvision>=0.9.0",
+    "scipy>=1.4.1",
+    "psutil>=5.8.0",
+    "ultralytics-thop>=2.0.18",
+]
+
+[project.optional-dependencies]
+export = [
+    "onnx>=1.12.0",
+    "onnxslim>=0.1.82",
+]
+tensorrt = [
+    "onnx>=1.12.0",
+    "tensorrt>=8.6.0",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/sevseg-yolo/sevseg-yolo"
+"Documentation" = "https://github.com/sevseg-yolo/sevseg-yolo#readme"
+"Bug Reports" = "https://github.com/sevseg-yolo/sevseg-yolo/issues"
+
+[tool.setuptools]
+packages = { find = { where = ["."], include = ["ultralytics", "ultralytics.*", "sevseg_yolo", "sevseg_yolo.*"] } }
+package-data = { "ultralytics" = ["**/*.yaml"], "ultralytics.assets" = ["*.jpg"] }
+
+[tool.setuptools.dynamic]
+version = { attr = "sevseg_yolo.__version__" }
