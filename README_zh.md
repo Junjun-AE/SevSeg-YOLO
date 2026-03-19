@@ -1,98 +1,139 @@
 <div align="center">
 
-<img src="https://img.shields.io/badge/🔬-SevSeg--YOLO-blue?style=for-the-badge&labelColor=0a0a23" alt="SevSeg-YOLO" height="40">
+<br>
 
-# SevSeg-YOLO
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/%F0%9F%94%AC_SevSeg--YOLO-%E6%A3%80%E6%B5%8B_%C2%B7_%E8%AF%84%E5%88%86_%C2%B7_%E5%88%86%E5%89%B2-blue?style=for-the-badge&labelColor=0d1117">
+  <img src="https://img.shields.io/badge/%F0%9F%94%AC_SevSeg--YOLO-%E6%A3%80%E6%B5%8B_%C2%B7_%E8%AF%84%E5%88%86_%C2%B7_%E5%88%86%E5%89%B2-blue?style=for-the-badge&labelColor=24292f" alt="SevSeg-YOLO" height="44">
+</picture>
 
-### 面向工业缺陷的统一检测、严重程度评分与零标注近似分割框架
+<br><br>
 
-**一个模型 · 三个任务 · 单次前向传播 · 无需掩膜标注**
+### 面向工业缺陷的统一检测、严重程度评分
 
-[![Python](https://img.shields.io/badge/Python-3.8+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
-[![PyTorch](https://img.shields.io/badge/PyTorch-1.8+-EE4C2C?style=flat-square&logo=pytorch&logoColor=white)](https://pytorch.org)
-[![License](https://img.shields.io/badge/License-AGPL_3.0-green?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-2.0.0-orange?style=flat-square)](CHANGELOG.md)
+### 与零标注近似分割框架
 
-**中文** · **[📖 English](README.md)**
+<br>
 
----
+<a href="README.md"><img src="https://img.shields.io/badge/📖_English-Click_Here-blue?style=for-the-badge" height="28"></a>
 
-SevSeg-YOLO 在 YOLO26 基础上增加轻量级 **ScoreHead** 分支（参数增量 <3%），在**单次前向传播**中同时输出**缺陷检测框**、**\[0,10\] 连续严重程度分数**和**近似轮廓掩膜**——**无需任何掩膜标注**。
+<br><br>
+
+<img src="https://img.shields.io/badge/Python-3.8+-3776AB?style=flat-square&logo=python&logoColor=white">
+<img src="https://img.shields.io/badge/PyTorch-1.8+-EE4C2C?style=flat-square&logo=pytorch&logoColor=white">
+<img src="https://img.shields.io/badge/ONNX-支持-005CED?style=flat-square&logo=onnx&logoColor=white">
+<img src="https://img.shields.io/badge/TensorRT-FP16-76B900?style=flat-square&logo=nvidia&logoColor=white">
+<img src="https://img.shields.io/badge/License-AGPL_3.0-green?style=flat-square">
+<img src="https://img.shields.io/badge/版本-2.0.0-orange?style=flat-square">
+
+<br><br>
+
+> **一个模型**在单次前向传播中同时输出检测框、**[0,10] 连续严重程度分数**和近似**轮廓掩膜**——**无需任何掩膜标注**。
+
+<br>
 
 </div>
 
 ---
 
-## ✨ 为什么选择 SevSeg-YOLO？
+<br>
 
-设想一条精密光学镜片检测产线，每分钟扫描 60+ 件产品。对每个缺陷，质量决策链需要回答三个问题：
+## 🌟 项目简介
 
-| 问题 | 传统方案 | SevSeg-YOLO |
-|:---|:---|:---|
-| **是否有缺陷？** | YOLO 检测器 ✅ | ✅ 内置检测 |
-| **缺陷多严重？**（等级2可接受，等级8需报废） | 额外分类模型（更多延迟） | ✅ ScoreHead 输出 0–10 连续分数 |
-| **缺陷覆盖多大面积？**（ISO/GB 合规） | 像素级分割（标注成本是检测的 10–20 倍） | ✅ MaskGenerator 从特征图推导掩膜，**零额外标注** |
+<table>
+<tr>
+<td>
 
-SevSeg-YOLO 用**一个模型、一次推理**同时回答以上三个问题。无需级联多模型，无需额外标注，无需额外延迟。
+**问题背景** — 工业检测对每个缺陷需要回答三个问题：在哪？（检测）、多严重？（评分）、多大面积？（分割）。传统方案需要级联 3 个独立模型，掩膜标注成本是检测的 10–20 倍，且累积推理延迟。
 
-### 核心创新
+**我们的方案** — SevSeg-YOLO 用一个模型、一次推理同时回答全部三个问题：
 
-- 🧪 **高斯 NLL 损失** — 将检测员评分的 ±1 分主观偏差建模为观测噪声，MAE 比 Smooth L1 降低 21.2%
-- 🎭 **MaskGenerator** — 纯后处理模块，利用 FPN 特征的双峰通道选择 + Canny 引导上采样生成像素级掩膜。CPU 中位耗时仅 1.13ms，100% 有效率
-- ⚡ **实时部署** — 全 5 规模 TRT FP16 端到端 < 10ms（> 100 FPS）
+</td>
+</tr>
+</table>
+
+<br>
+
+<div align="center">
+
+| | 传统方案 | SevSeg-YOLO |
+|:---|:---:|:---:|
+| 🔍 **缺陷检测** | ✅ YOLO 检测器 | ✅ 内置 |
+| 📊 **严重程度评分** | ❌ 需要额外分类器 | ✅ ScoreHead (0–10) |
+| 🎭 **缺陷掩膜** | ❌ 需要像素标注 (10–20×成本) | ✅ 零标注生成 |
+| ⚡ **推理次数** | 2–3 次级联 | **1 次** |
+| 🕐 **端到端延迟** | >20ms | **<10ms** (全规模) |
+
+</div>
+
+<br>
 
 ---
+
+<br>
 
 ## 🏗️ 架构
 
+<br>
+
+```mermaid
+graph TB
+    Input["🖼️ 输入图像<br/>(640×640)"] --> Backbone
+
+    subgraph Model["🧠 SevSeg-YOLO 模型"]
+        Backbone["YOLO26 骨干网络<br/>CSP-DarkNet"] --> Neck["特征金字塔<br/>FPN / PAN"]
+        Neck --> P3["P3 · 步幅 8<br/>80×80"]
+        Neck --> P4["P4 · 步幅 16<br/>40×40"]
+        Neck --> P5["P5 · 步幅 32<br/>20×20"]
+
+        P3 & P4 & P5 --> Head["ScoreDetect 检测头"]
+
+        Head --> BoxHead["📦 检测头<br/>(x, y, w, h)"]
+        Head --> ClsHead["🏷️ 分类头<br/>(类别概率)"]
+        Head --> ScoreHead["⭐ ScoreHead — 新增<br/>DWConv → 1×1 → Sigmoid×10<br/>参数增量 &lt;3%"]
+    end
+
+    BoxHead & ClsHead --> Detection["检测结果<br/>x1, y1, x2, y2, 置信度, 类别"]
+    ScoreHead --> Severity["严重程度分数<br/>0 – 10"]
+
+    Detection --> MG
+
+    subgraph MG["🎭 MaskGenerator · 后处理 · CPU · 不参与训练"]
+        S1["1️⃣ 尺度自适应<br/>特征选择"]
+        S2["2️⃣ 双峰 Top-K<br/>通道选择"]
+        S3["3️⃣ 多尺度<br/>加权融合"]
+        S4["4️⃣ Canny 边缘<br/>引导上采样"]
+        S5["5️⃣ 自适应<br/>二值化"]
+        S6["6️⃣ 形态学<br/>闭操作+开操作"]
+        S1 --> S2 --> S3 --> S4 --> S5 --> S6
+    end
+
+    MG --> Output["✅ 最终输出<br/>检测框 + 类别 + 置信度 + 严重程度 + 掩膜"]
+
+    style Input fill:#1a1a2e,color:#fff,stroke:#e94560
+    style Model fill:#16213e,color:#fff,stroke:#0f3460
+    style ScoreHead fill:#e94560,color:#fff,stroke:#e94560
+    style MG fill:#0f3460,color:#fff,stroke:#533483
+    style Output fill:#1a1a2e,color:#fff,stroke:#e94560
 ```
-  输入图像 (640×640)
-         │
-         ▼
-  ┌─────────────────────────┐
-  │  YOLO26 骨干网络 + 特征  │
-  │  金字塔 (FPN/PAN)       │
-  │                         │
-  │   P3(s=8) P4(s=16) P5  │
-  └──────────┬──────────────┘
-             │
-  ┌──────────▼──────────────┐
-  │    ScoreDetect 检测头    │
-  │                         │
-  │  ┌─────┐ ┌─────┐ ┌────────────┐
-  │  │检测头│ │分类头│ │ ScoreHead  │ ← 新增 (<3% 参数)
-  │  │(坐标)│ │(类别)│ │ DWConv→1×1 │
-  │  │     │ │     │ │ →Sigmoid×10│
-  │  └──┬──┘ └──┬──┘ └─────┬──────┘
-  └─────┼───────┼──────────┼────────┘
-        └───┬───┘          │
-            ▼              ▼
-       检测结果          严重程度
-  (x1,y1,x2,y2,       (0 – 10)
-   置信度, 类别)
-            │
-            ▼
-  ┌─────────────────────────┐
-  │    MaskGenerator        │  (后处理, CPU, 不参与训练)
-  │                         │
-  │  1. 尺度自适应特征选择    │
-  │  2. 双峰 Top-K 通道选择  │
-  │  3. 多尺度加权融合       │
-  │  4. Canny 边缘引导上采样 │
-  │  5. 自适应二值化         │
-  │  6. 形态学后处理         │
-  └──────────┬──────────────┘
-             ▼
-          最终输出:
-  检测框 + 类别 + 置信度
-  + 严重程度 + 二值掩膜
-```
+
+<br>
+
+### 🧪 高斯 NLL 损失
+
+标准回归损失假设标注无噪声，但检测员对同一缺陷的评分偏差约 ±1 分。高斯 NLL 将噪声显式建模：
+
+$$L_{score} = \frac{1}{2\sigma^2}(y_{pred} - y_{gt})^2 + \ln\sigma$$
+
+**效果**：相比 Smooth L1，MAE ↓21.2%，Spearman ρ ↑54.3%（5-seed 统计）。
+
+<br>
 
 ---
 
-## 🚀 安装
+<br>
 
-### 从源码安装（推荐）
+## 🚀 快速开始
 
 ```bash
 git clone https://github.com/sevseg-yolo/sevseg-yolo.git
@@ -100,29 +141,29 @@ cd sevseg-yolo
 pip install -e .
 ```
 
-### 依赖
+```python
+from sevseg_yolo import SevSegYOLO
 
-SevSeg-YOLO 只需要标准包——**不需要 `opencv-contrib`**：
+model = SevSegYOLO("best.pt")
+result = model.predict("image.jpg")
 
+for det in result.detections:
+    print(f"{det.class_name}: 严重程度={det.severity:.1f}, 掩膜填充率={det.fill_ratio:.3f}")
 ```
-torch >= 1.8.0
-opencv-python >= 4.6.0
-numpy, scipy, matplotlib, pillow, pyyaml
-```
 
-如需导出 ONNX：`pip install -e ".[export]"`
-
-如需 TensorRT：`pip install -e ".[tensorrt]"`
+<br>
 
 ---
 
+<br>
+
 ## 📖 完整使用教程
 
-### 第一步：准备数据集
+<br>
 
-#### 1.1 使用 LabelMe 标注
+### 第一步 · 标注数据
 
-安装 [LabelMe](https://github.com/wkentaro/labelme)，用矩形框标注缺陷。在 `description` 字段写入严重程度分数：
+使用 [LabelMe](https://github.com/wkentaro/labelme) 画矩形框标注缺陷，在 `description` 字段写入严重程度分数：
 
 ```json
 {
@@ -135,23 +176,23 @@ numpy, scipy, matplotlib, pillow, pyyaml
 }
 ```
 
-> 💡 **评分参考**：0 = 无缺陷，1–3 = 轻微（可接受），4–6 = 中等（需返工），7–10 = 严重（报废）。请根据实际质量标准调整。
+<details>
+<summary><b>💡 严重程度评分参考</b></summary>
 
-#### 1.2 整理目录结构
+| 范围 | 含义 | 处置 |
+|:---:|:---|:---|
+| **0** | 无缺陷 | — |
+| **1 – 3** | 轻微缺陷 | 接受 |
+| **4 – 6** | 中等缺陷 | 返工 |
+| **7 – 10** | 严重缺陷 | 报废 |
 
-```
-my_dataset/
-├── images/          ← 原始图片
-│   ├── img_001.jpg
-│   ├── img_002.jpg
-│   └── ...
-└── jsons/           ← LabelMe 标注文件
-    ├── img_001.json
-    ├── img_002.json
-    └── ...
-```
+请根据实际质量标准调整阈值。
 
-#### 1.3 格式转换
+</details>
+
+<br>
+
+### 第二步 · 格式转换
 
 ```python
 from sevseg_yolo.convert import convert_dataset
@@ -164,224 +205,219 @@ convert_dataset(
 )
 ```
 
-转换后的目录结构：
+<details>
+<summary><b>📂 输出目录结构与标签格式</b></summary>
 
 ```
 my_dataset_yolo/
-├── images/
-│   ├── train/       ← 训练图片
-│   └── val/         ← 验证图片
-├── labels/
-│   ├── train/
-│   │   └── img_001.txt   ← "0 0.500 0.300 0.120 0.080 7.5"
-│   └── val/
-└── data.yaml              ← 自动生成的配置文件
+├── images/{train,val}/
+├── labels/{train,val}/    ← "类别ID cx cy w h 严重程度"
+└── data.yaml              ← 自动生成
 ```
 
-**标签格式**——标准 YOLO 格式 + 第 6 列严重程度分数：
+</details>
 
-```
-# 类别ID  中心x  中心y  宽度  高度  严重程度
-0  0.500  0.300  0.120  0.080  7.5
-1  0.250  0.600  0.050  0.040  3.0
-```
+<br>
 
-### 第二步：训练模型
+### 第三步 · 训练
 
 ```python
 from ultralytics import YOLO
 
-# 选择模型规模: n(最快) / s / m(推荐) / l / x(最精确)
+# 选择规模: n(最快) / s / m(推荐) / l / x(最精确)
 model = YOLO("ultralytics/cfg/models/26/yolo26m-score.yaml")
-
 model.train(
     task="score_detect",
     data="my_dataset_yolo/data.yaml",
-    pretrained="yolo26m.pt",       # YOLO26 预训练骨干权重
-    epochs=105,
-    batch=32,
-    imgsz=640,
-    mixup=0.0,                     # ⚠️ 必须为 0
+    pretrained="yolo26m.pt",
+    epochs=105, batch=32, imgsz=640,
+    mixup=0.0,    # ⚠️ 必须为 0
 )
 ```
 
-> ⚠️ **MixUp 必须关闭**——严重程度分数不能在混合图像间线性插值。"严重裂纹×0.3 + 轻微划痕×0.7 = 严重程度5.2" 没有物理意义。
+<details>
+<summary><b>💡 训练建议</b></summary>
 
-**训练建议：**
-- 先用 `n`（nano）规模快速验证流程，再换大模型
-- 使用项目提供的 `configs/train_score.yaml` 作为起点
-- ScoreHead 从零开始训练，骨干网络加载预训练权重
-- 训练过程中关注 `score_loss`，它应该和 `box_loss`、`cls_loss` 一起稳步下降
+- 先用 `n` 规模快速验证流程，再换大模型
+- 使用 `configs/train_score.yaml` 作为模板
+- ScoreHead 从零训练，骨干网络加载预训练权重
+- 训练时关注 `score_loss`，应随 `box_loss` 和 `cls_loss` 一起下降
+- **为什么 MixUp=0？** "严重裂纹×0.3 + 轻微划痕×0.7 = 5.2" 没有物理意义
 
-### 第三步：推理
+</details>
 
-#### Python API（推荐）
+<br>
+
+### 第四步 · 推理
 
 ```python
 from sevseg_yolo import SevSegYOLO
 
-# 加载模型
-model = SevSegYOLO("runs/score_detect/train/weights/best.pt")
-
-# 单张推理
-result = model.predict("test_image.jpg")
+model = SevSegYOLO("best.pt")
+result = model.predict("test.jpg")
 
 for det in result.detections:
     print(f"类别: {det.class_name}")
     print(f"  严重程度: {det.severity:.1f} / 10")
     print(f"  置信度: {det.confidence:.2f}")
     print(f"  检测框: {det.bbox}")
-    print(f"  Mask 形状: {det.mask.shape}")
-    print(f"  Mask 填充率: {det.fill_ratio:.3f}")
+    print(f"  Mask: {det.mask.shape}, 填充率={det.fill_ratio:.3f}")
 
-# 批量推理
-results = model.predict(["img1.jpg", "img2.jpg", "img3.jpg"])
-```
-
-#### 命令行
-
-```bash
-python tools/predict_demo.py \
-    --weights best.pt \
-    --source test_images/ \
-    --save-dir outputs/ \
-    --conf 0.15
-```
-
-#### 可视化保存
-
-```python
-# 保存带检测框、严重程度标签、掩膜叠加的可视化图
+# 可视化保存
 result.visualize().save("output.jpg")
 ```
 
-### 第四步：导出部署
+```bash
+python tools/predict_demo.py --weights best.pt --source images/ --save-dir outputs/
+```
 
-#### ONNX 导出
+<br>
+
+### 第五步 · 导出部署
 
 ```python
 from sevseg_yolo.export import export_scoreyolo_onnx
-
-export_scoreyolo_onnx(
-    model.model,
-    "model.onnx",
-    imgsz=640,
-    opset=17,
-)
-```
-
-#### TensorRT 部署
-
-```python
 from sevseg_yolo.tensorrt_deploy import deploy_scoreyolo
 
-deploy_scoreyolo(
-    "model.onnx",
-    "model.engine",
-    fp16=True,          # FP16 量化
-    max_batch=4,
-)
+export_scoreyolo_onnx(model.model, "model.onnx", imgsz=640)          # → ONNX
+deploy_scoreyolo("model.onnx", "model.engine", fp16=True)            # → TensorRT
 ```
 
-### 第五步：评估严重程度评分
+<br>
+
+### 第六步 · 评估
 
 ```python
 from sevseg_yolo.evaluation import full_score_evaluation
 
 metrics = full_score_evaluation(pred_scores, gt_scores)
-print(f"MAE: {metrics['mae']:.3f}")
-print(f"Spearman ρ: {metrics['spearman_rho']:.3f}")
-print(f"±1 容忍准确率: {metrics['tolerance_acc']:.1%}")
+# → MAE, Spearman ρ, ±1 容忍准确率, 分类别 MAE
 ```
 
----
-
-## 🎭 MaskGenerator 工作原理
-
-MaskGenerator 是**纯后处理模块**——不参与训练，在 CPU 上运行。它利用检测模型已经产生的 FPN 特征图（P3/P4/P5）来推导像素级缺陷掩膜。
-
-**核心思路**：经过缺陷检测训练的骨干网络已经隐式学会了区分缺陷和正常区域——缺陷区域在特征通道上呈现独特的激活模式。MaskGenerator 将这种隐式知识转化为显式的二值掩膜。
-
-| 步骤 | 操作 | 说明 |
-|:---:|:---|:---|
-| 1 | **尺度自适应特征选择** | 根据模型规模选择最佳特征组合（n/s: Layer2+P3+P4; m/l/x: P3+P4+P5） |
-| 2 | **双峰 Top-K 通道选择** | 在 bbox 区域内，计算每个通道最暗 30% 与最亮 30% 像素的均值差。选分离度最大的 K 个通道——这些通道最能区分缺陷和正常区域 |
-| 3 | **多尺度加权融合** | 各尺度激活图上采样到最高分辨率（P3 级别），按权重加权平均 |
-| 4 | **Canny 边缘引导上采样** | 用原图的边缘信息引导低分辨率激活图的上采样——边缘处保持锐利，平滑处去除噪声 |
-| 5 | **自适应二值化** | `cv2.adaptiveThreshold` 将连续激活值转换为 {0, 1} 二值掩膜 |
-| 6 | **形态学后处理** | 闭操作（填充小孔洞）+ 开操作（去除噪声小点）→ 最终二值掩膜 |
+<br>
 
 ---
+
+<br>
+
+## 🎭 MaskGenerator 原理
+
+**纯后处理模块**——不参与训练，在 CPU 上运行。利用检测模型自身的 FPN 特征图推导像素级缺陷掩膜。
+
+**核心思路**：骨干网络在检测训练中已经学会了区分缺陷与正常区域——MaskGenerator 将这种隐式知识转化为显式二值掩膜。
+
+```mermaid
+graph LR
+    A["P3 · P4 · P5"] --> B["1. 尺度自适应<br/>特征选择"]
+    B --> C["2. 双峰 Top-K<br/>通道选择"]
+    C --> D["3. 多尺度<br/>融合"]
+    D --> E["4. Canny 引导<br/>上采样"]
+    E --> F["5. 自适应<br/>二值化"]
+    F --> G["6. 形态学"]
+    G --> H["二值掩膜"]
+
+    style C fill:#e94560,color:#fff
+```
+
+<details>
+<summary><b>双峰通道选择原理（V3 核心改进）</b></summary>
+
+在 bbox 区域内，对每个特征通道：
+
+1. 排序所有像素值
+2. 计算**最暗 30%** 的均值（代表缺陷区域）
+3. 计算**最亮 30%** 的均值（代表正常区域）
+4. **双峰间距** = 亮均值 − 暗均值
+5. 选双峰间距**最大**的 Top-K 通道
+
+这些通道最能区分缺陷和正常区域。比 V2 的方差选择更好——方差高的通道可能只是背景纹理变化大。
+
+</details>
+
+<br>
+
+---
+
+<br>
 
 ## 📊 模型库
 
-| 规模 | 参数 | mAP@50 | MAE | Spearman ρ |
-|:---:|:---:|:---:|:---:|:---:|
-| **n** | 2.57M | 0.513 | 1.317 | 0.742 |
-| **s** | 10.19M | 0.573 | 1.306 | 0.720 |
-| **m** | 22.19M | 0.608 | 1.316 | 0.715 |
-| **l** | 26.59M | 0.626 | 1.297 | 0.709 |
-| **x** | 56.08M | 0.623 | 1.224 | 0.744 |
+| 规模 | 参数 | GFLOPs | mAP@50 | 评分 MAE ↓ | Spearman ρ ↑ |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| **n** | 2.57M | 5.3 | 0.513 | 1.317 | 0.742 |
+| **s** | 10.19M | 20.8 | 0.573 | 1.306 | 0.720 |
+| **m** | 22.19M | 68.5 | 0.608 | 1.316 | 0.715 |
+| **l** | 26.59M | 86.8 | 0.626 | 1.297 | 0.709 |
+| **x** | 56.08M | 194.8 | 0.623 | 1.224 | 0.744 |
 
-> 以上为 5-seed 统计实验结果（Gaussian NLL σ=0.1, λ=0.05）。完整实验数据请参阅论文。
+<sub>5-seed 统计 · Gaussian NLL (σ=0.1, λ=0.05) · 全规模 TRT FP16 端到端 < 10ms (>100 FPS)</sub>
+
+<br>
 
 ---
+
+<br>
 
 ## 📁 项目结构
 
 ```
 sevseg-yolo/
-├── sevseg_yolo/                 # 核心 Python 包
-│   ├── model.py                 # SevSegYOLO 统一推理入口
-│   ├── mask_generator_v3.py     # 双峰通道选择（默认）
-│   ├── mask_generator_v2.py     # 方差通道选择（旧版兼容）
-│   ├── convert.py               # LabelMe → YOLO+Score 格式转换
-│   ├── evaluation.py            # 评估指标（MAE, Spearman ρ, 容忍准确率）
-│   ├── export.py                # ONNX 导出
-│   ├── tensorrt_deploy.py       # TensorRT 部署
-│   ├── visualization.py         # 可视化工具
-│   └── utils.py                 # 辅助函数
-├── ultralytics/                 # 修改的 Ultralytics
-│   ├── nn/modules/head.py       # ScoreHead + ScoreDetect
-│   ├── utils/loss.py            # 高斯 NLL 损失
-│   ├── data/                    # 6 列标签支持
-│   └── cfg/models/26/           # 模型 YAML 配置
-├── configs/train_score.yaml     # 训练配置模板
-├── tools/                       # 命令行演示脚本
-├── pyproject.toml
-├── LICENSE
-├── CHANGELOG.md
-└── CONTRIBUTING.md
+├── 📦 sevseg_yolo/              # 核心包
+│   ├── model.py                 #   统一推理入口
+│   ├── mask_generator_v3.py     #   双峰通道选择（默认）
+│   ├── mask_generator_v2.py     #   方差通道选择（旧版）
+│   ├── convert.py               #   数据格式转换
+│   ├── evaluation.py            #   评估指标
+│   ├── export.py                #   ONNX 导出
+│   ├── tensorrt_deploy.py       #   TensorRT 部署
+│   └── visualization.py         #   可视化工具
+├── 🔧 ultralytics/              # 修改的 YOLO26
+│   ├── nn/modules/head.py       #   ScoreHead
+│   ├── utils/loss.py            #   高斯 NLL 损失
+│   └── cfg/models/26/           #   模型配置
+├── 📋 configs/                  # 训练配置模板
+├── 🛠️ tools/                    # 命令行演示脚本
+└── 📄 LICENSE, CHANGELOG.md, CONTRIBUTING.md
 ```
 
+<br>
+
 ---
+
+<br>
 
 ## ⚠️ 注意事项
 
-- **MixUp = 0**：严重程度训练必须关闭 MixUp
-- **Severity 范围**：0.0–10.0（训练时内部归一化到 0.0–1.0）
-- **MaskGenerator**：从特征图推导的近似掩膜，不是像素级精确分割
-- **σ = 0.1**：高斯 NLL 固定标准差，由工业标注噪声（±1 分）推导
-- **无需 opencv-contrib**：只需标准 `opencv-python`
+> ⛔ **MixUp = 0** — 严重程度训练必须关闭
+
+> 📏 **Severity 范围** — 0.0 到 10.0（训练时内部归一化到 0–1）
+
+> 🎭 **掩膜精度** — 从特征图推导的近似掩膜，非像素级精确分割
+
+> 📦 **依赖** — 只需标准 `opencv-python`，无需 opencv-contrib
+
+<br>
 
 ---
 
+<div align="center">
+
 ## 📖 引用
+
+</div>
 
 ```bibtex
 @article{sevseg_yolo_2026,
-  title={SevSeg-YOLO: A Unified Detection, Severity Scoring, and Annotation-Free
-         Approximate Segmentation Framework for Industrial Defects},
-  author={SevSeg-YOLO Contributors},
-  year={2026}
+  title   = {SevSeg-YOLO: A Unified Detection, Severity Scoring, and
+             Annotation-Free Approximate Segmentation Framework
+             for Industrial Defects},
+  author  = {SevSeg-YOLO Contributors},
+  year    = {2026}
 }
 ```
 
-## 📜 许可证
+<div align="center">
 
-[AGPL-3.0](LICENSE)。修改的 Ultralytics 代码保留其原始 AGPL-3.0 许可证。
+**[AGPL-3.0 许可证](LICENSE)** · 基于 [Ultralytics](https://github.com/ultralytics/ultralytics) 和 [LabelMe](https://github.com/wkentaro/labelme)
 
-## 🙏 致谢
-
-- [Ultralytics](https://github.com/ultralytics/ultralytics) — YOLO26 基础框架
-- [LabelMe](https://github.com/wkentaro/labelme) — 标注工具
+</div>

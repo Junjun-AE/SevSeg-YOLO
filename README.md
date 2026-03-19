@@ -1,101 +1,134 @@
 <div align="center">
 
-<img src="https://img.shields.io/badge/🔬-SevSeg--YOLO-blue?style=for-the-badge&labelColor=0a0a23" alt="SevSeg-YOLO" height="40">
+# 🔬 SevSeg-YOLO
 
-# SevSeg-YOLO
+### Unified Detection, Severity Scoring & Zero-Annotation Segmentation
+### for Industrial Defects
 
-### Unified Detection, Severity Scoring & Zero-Annotation Segmentation for Industrial Defects
+<br>
 
-**One model · Three tasks · Single forward pass · No mask annotations**
+<a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.8+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
+<a href="https://pytorch.org"><img src="https://img.shields.io/badge/PyTorch-1.8+-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white" alt="PyTorch"></a>
+<a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL_3.0-green?style=for-the-badge" alt="License"></a>
+<a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Version-2.0.0-orange?style=for-the-badge" alt="Version"></a>
 
-[![Python](https://img.shields.io/badge/Python-3.8+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
-[![PyTorch](https://img.shields.io/badge/PyTorch-1.8+-EE4C2C?style=flat-square&logo=pytorch&logoColor=white)](https://pytorch.org)
-[![License](https://img.shields.io/badge/License-AGPL_3.0-green?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-2.0.0-orange?style=flat-square)](CHANGELOG.md)
+<br><br>
 
-**[📖 中文文档](README_zh.md)** · **English**
+> One model · Three tasks · Single forward pass · No mask annotations needed
 
----
+<br>
 
-SevSeg-YOLO extends YOLO26 with a lightweight **ScoreHead** branch (<3% parameter overhead) that predicts **bounding boxes**, continuous **\[0,10\] severity scores**, and approximate **contour masks** — all in a single forward pass, requiring **zero mask annotations**.
+**[📖 中文文档](README_zh.md)**&ensp;|&ensp;English
 
 </div>
 
----
-
-## ✨ Why SevSeg-YOLO?
-
-Consider a precision optics inspection line scanning 60+ products per minute. For every defect, the quality pipeline needs three answers:
-
-| Question | Traditional Solution | SevSeg-YOLO |
-|:---|:---|:---|
-| **Is there a defect?** | YOLO detector ✅ | ✅ Built-in |
-| **How severe is it?** (grade 2 = accept, grade 8 = scrap) | Separate classifier (extra model, extra latency) | ✅ ScoreHead outputs 0–10 continuously |
-| **What area does it cover?** (ISO/GB compliance) | Pixel-level segmentation (10–20× annotation cost) | ✅ MaskGenerator derives masks from detection features, **zero extra annotations** |
-
-SevSeg-YOLO answers all three in **one model, one forward pass**. No cascading, no extra labels, no extra latency.
-
-### Key Innovations
-
-- 🧪 **Gaussian NLL Loss** — Models the ±1-score subjectivity of human inspectors as observation noise, reducing MAE by 21.2% vs Smooth L1
-- 🎭 **MaskGenerator** — Post-processing module that extracts pixel-level masks from FPN features using bimodal channel selection + Canny-guided upsampling. CPU median 1.13ms, 100% mask validity
-- ⚡ **Real-Time** — All 5 model scales achieve end-to-end < 10ms (> 100 FPS) on TRT FP16
+<br>
 
 ---
+
+<br>
+
+## 💡 The Problem
+
+On a high-speed inspection line scanning **60+ products/min**, every defect needs three answers:
+
+<table>
+<tr><td>❓</td><td><b>Is there a defect?</b></td><td>→ Solved by standard YOLO detectors</td></tr>
+<tr><td>📊</td><td><b>How severe?</b> (grade 2 = accept, grade 8 = scrap)</td><td>→ Needs a separate classifier + extra latency</td></tr>
+<tr><td>📐</td><td><b>What area does it cover?</b> (ISO/GB compliance)</td><td>→ Needs pixel-level annotation (10–20× cost)</td></tr>
+</table>
+
+**SevSeg-YOLO answers all three in one model, one pass.**
+
+<br>
+
+---
+
+<br>
+
+## ✨ Key Innovations
+
+<table>
+<tr>
+<td width="70" align="center">🧪</td>
+<td>
+<b>Gaussian NLL Loss</b><br>
+Models the ±1 subjectivity of human inspectors as observation noise.<br>
+<b>MAE ↓21.2%</b> &nbsp;·&nbsp; <b>Spearman ρ ↑54.3%</b> vs Smooth L1 (5-seed avg)
+</td>
+</tr>
+<tr>
+<td align="center">🎭</td>
+<td>
+<b>MaskGenerator (Zero-Annotation)</b><br>
+Derives pixel-level masks from FPN features via bimodal channel selection + Canny-guided upsampling.<br>
+<b>100% mask validity</b> &nbsp;·&nbsp; <b>1.13ms</b> median on CPU
+</td>
+</tr>
+<tr>
+<td align="center">⚡</td>
+<td>
+<b>Real-Time Deployment</b><br>
+All 5 scales end-to-end <b>&lt;10ms</b> on TRT FP16 (<b>&gt;100 FPS</b>).<br>
+Nano scale: <b>534 FPS</b> pure inference &nbsp;·&nbsp; Engine size <b>7.4MB</b>
+</td>
+</tr>
+</table>
+
+<br>
+
+---
+
+<br>
 
 ## 🏗️ Architecture
 
+```mermaid
+graph TD
+    A["🖼️ Input Image<br>(640×640)"] --> B
+    subgraph BACKBONE ["YOLO26 Backbone + FPN/PAN Neck"]
+        B["CSP-DarkNet"] --> C1["P3<br>stride 8"]
+        B --> C2["P4<br>stride 16"]
+        B --> C3["P5<br>stride 32"]
+    end
+    C1 --> D
+    C2 --> D
+    C3 --> D
+    subgraph HEAD ["ScoreDetect Head"]
+        D["Multi-scale Features"] --> E1["📦 Box Head<br>(x,y,w,h)"]
+        D --> E2["🏷️ Cls Head<br>(classes)"]
+        D --> E3["📊 Score Head ✨<br>DWConv→1×1→Sigmoid×10<br><i>&lt;3% param overhead</i>"]
+    end
+    E1 --> F["Detection Output<br>boxes + classes + conf"]
+    E2 --> F
+    E3 --> G["Severity Score<br>(0 – 10)"]
+    F --> H
+    subgraph MASK ["🎭 MaskGenerator (CPU post-processing)"]
+        H["Per-bbox Processing"] --> M1["1️⃣ Scale-adaptive<br>feature selection"]
+        M1 --> M2["2️⃣ Bimodal Top-K<br>channel selection"]
+        M2 --> M3["3️⃣ Multi-scale<br>weighted fusion"]
+        M3 --> M4["4️⃣ Canny edge-guided<br>upsampling"]
+        M4 --> M5["5️⃣ Adaptive<br>binarization"]
+        M5 --> M6["6️⃣ Morphology<br>close + open"]
+    end
+    M6 --> OUT["🎯 Final Output<br>boxes + classes + conf + severity + binary masks"]
+    G --> OUT
+    style BACKBONE fill:#1a1a2e,stroke:#16213e,color:#fff
+    style HEAD fill:#0f3460,stroke:#16213e,color:#fff
+    style MASK fill:#533483,stroke:#16213e,color:#fff
+    style E3 fill:#e94560,stroke:#e94560,color:#fff
+    style OUT fill:#0a9396,stroke:#0a9396,color:#fff
 ```
-  Input Image (640×640)
-         │
-         ▼
-  ┌─────────────────────────┐
-  │   YOLO26 Backbone+Neck  │
-  │   (CSP-DarkNet + FPN)   │
-  │                         │
-  │   P3(s=8) P4(s=16) P5  │
-  └──────────┬──────────────┘
-             │
-  ┌──────────▼──────────────┐
-  │    ScoreDetect Head     │
-  │                         │
-  │  ┌─────┐ ┌─────┐ ┌────────────┐
-  │  │ Box │ │ Cls │ │ ScoreHead  │ ← NEW (<3% params)
-  │  │ Head│ │ Head│ │ DWConv→1×1 │
-  │  │     │ │     │ │ →Sigmoid×10│
-  │  └──┬──┘ └──┬──┘ └─────┬──────┘
-  └─────┼───────┼──────────┼────────┘
-        └───┬───┘          │
-            ▼              ▼
-     Detection         Severity
-  (x1,y1,x2,y2,       (0 – 10)
-   conf, class)
-            │
-            ▼
-  ┌─────────────────────────┐
-  │    MaskGenerator        │  (post-processing, CPU, no training)
-  │                         │
-  │  1. Scale-adaptive      │
-  │     feature selection   │
-  │  2. Bimodal Top-K       │
-  │     channel selection   │
-  │  3. Multi-scale fusion  │
-  │  4. Canny edge-guided   │
-  │     upsampling          │
-  │  5. Adaptive threshold  │
-  │  6. Morphology          │
-  └──────────┬──────────────┘
-             ▼
-      Final Output:
-  boxes + classes + conf
-  + severity + masks
-```
+
+<br>
 
 ---
 
-## 🚀 Installation
+<br>
 
-### From Source (recommended)
+## 🚀 Quick Start
+
+### Installation
 
 ```bash
 git clone https://github.com/sevseg-yolo/sevseg-yolo.git
@@ -103,29 +136,38 @@ cd sevseg-yolo
 pip install -e .
 ```
 
-### Dependencies
+> Only standard `opencv-python` needed — no `opencv-contrib`.
+> For ONNX export: `pip install -e ".[export]"` · For TensorRT: `pip install -e ".[tensorrt]"`
 
-SevSeg-YOLO requires only standard packages — **no `opencv-contrib` needed**:
+<br>
 
+### Inference in 3 Lines
+
+```python
+from sevseg_yolo import SevSegYOLO
+
+model = SevSegYOLO("best.pt")
+result = model.predict("image.jpg")
+
+for det in result.detections:
+    print(f"{det.class_name}: severity={det.severity:.1f}, mask_fill={det.fill_ratio:.3f}")
 ```
-torch >= 1.8.0
-opencv-python >= 4.6.0
-numpy, scipy, matplotlib, pillow, pyyaml
-```
 
-For ONNX export: `pip install -e ".[export]"`
-
-For TensorRT: `pip install -e ".[tensorrt]"`
+<br>
 
 ---
 
-## 📖 Tutorial: Complete Workflow
+<br>
 
-### Step 1: Prepare Your Dataset
+## 📖 Full Tutorial
 
-#### 1.1 Annotate with LabelMe
+### Step 1 · Prepare Dataset
 
-Use [LabelMe](https://github.com/wkentaro/labelme) to draw **rectangle** bounding boxes around defects. In the `description` field, write the severity score:
+<details>
+<summary><b>1.1  Annotate with LabelMe</b> — click to expand</summary>
+<br>
+
+Use [LabelMe](https://github.com/wkentaro/labelme) to draw rectangle bounding boxes. Write severity in the `description` field:
 
 ```json
 {
@@ -138,23 +180,36 @@ Use [LabelMe](https://github.com/wkentaro/labelme) to draw **rectangle** boundin
 }
 ```
 
-> 💡 **Severity guidelines**: 0 = no defect, 1–3 = minor (accept), 4–6 = moderate (rework), 7–10 = severe (scrap). Adjust to your quality standards.
+**Scoring guideline:**
 
-#### 1.2 Organize Directory Structure
+| Severity | Meaning | Action |
+|:---:|:---|:---|
+| 0 | No defect | — |
+| 1 – 3 | Minor | Accept |
+| 4 – 6 | Moderate | Rework |
+| 7 – 10 | Severe | Scrap |
+
+</details>
+
+<details>
+<summary><b>1.2  Organize directories</b></summary>
+<br>
 
 ```
 my_dataset/
 ├── images/
 │   ├── img_001.jpg
-│   ├── img_002.jpg
 │   └── ...
 └── jsons/
-    ├── img_001.json    ← LabelMe JSON
-    ├── img_002.json
+    ├── img_001.json
     └── ...
 ```
 
-#### 1.3 Convert to YOLO Format
+</details>
+
+<details>
+<summary><b>1.3  Convert to YOLO format</b></summary>
+<br>
 
 ```python
 from sevseg_yolo.convert import convert_dataset
@@ -163,162 +218,140 @@ convert_dataset(
     images_dir="my_dataset/images",
     jsons_dir="my_dataset/jsons",
     output_dir="my_dataset_yolo",
-    val_ratio=0.2,   # 80% train, 20% val
+    val_ratio=0.2,
 )
 ```
 
-This produces:
+Output: standard YOLO layout with 6-column labels (`class_id cx cy w h severity`)
 
-```
-my_dataset_yolo/
-├── images/
-│   ├── train/
-│   └── val/
-├── labels/
-│   ├── train/
-│   │   └── img_001.txt   ← "0 0.500 0.300 0.120 0.080 7.5"
-│   └── val/
-└── data.yaml              ← auto-generated config
-```
+</details>
 
-**Label format** — standard YOLO + 6th column for severity:
+<br>
 
-```
-# class_id  center_x  center_y  width  height  severity
-0  0.500  0.300  0.120  0.080  7.5
-1  0.250  0.600  0.050  0.040  3.0
-```
-
-### Step 2: Train
+### Step 2 · Train
 
 ```python
 from ultralytics import YOLO
 
-# Choose a model scale: n / s / m / l / x
 model = YOLO("ultralytics/cfg/models/26/yolo26m-score.yaml")
-
 model.train(
     task="score_detect",
     data="my_dataset_yolo/data.yaml",
-    pretrained="yolo26m.pt",       # YOLO26 pretrained backbone
-    epochs=105,
-    batch=32,
-    imgsz=640,
-    mixup=0.0,                     # ⚠️ MUST be 0
+    pretrained="yolo26m.pt",
+    epochs=105, batch=32, imgsz=640,
+    mixup=0.0,   # ⚠️ MUST be 0
 )
 ```
 
-> ⚠️ **MixUp must be disabled** — severity scores cannot be linearly interpolated between mixed images. A "severe crack × 0.3 + minor scratch × 0.7 = severity 5.2" has no physical meaning.
+> ⚠️ **MixUp must be 0.** Severity scores cannot be interpolated between mixed images.
 
-**Training tips:**
-- Start with the `n` (nano) scale for quick experiments, then scale up
-- Use the provided `configs/train_score.yaml` as a starting point
-- The Score Head trains from scratch while the backbone loads pretrained weights
-- Monitor `score_loss` alongside the standard `box_loss` and `cls_loss`
+<br>
 
-### Step 3: Inference
+### Step 3 · Inference
 
-#### Python API (recommended)
+<details>
+<summary><b>Python API</b> (recommended)</summary>
+<br>
 
 ```python
 from sevseg_yolo import SevSegYOLO
 
-# Load model
 model = SevSegYOLO("runs/score_detect/train/weights/best.pt")
-
-# Single image
-result = model.predict("test_image.jpg")
+result = model.predict("test.jpg")
 
 for det in result.detections:
-    print(f"Class: {det.class_name}")
-    print(f"  Severity: {det.severity:.1f} / 10")
-    print(f"  Confidence: {det.confidence:.2f}")
-    print(f"  Bounding box: {det.bbox}")
-    print(f"  Mask shape: {det.mask.shape}")
-    print(f"  Mask fill ratio: {det.fill_ratio:.3f}")
+    print(f"Class: {det.class_name}, Severity: {det.severity:.1f}/10")
+    print(f"  Bbox: {det.bbox}, Mask: {det.mask.shape}, Fill: {det.fill_ratio:.3f}")
 
-# Batch inference
-results = model.predict(["img1.jpg", "img2.jpg", "img3.jpg"])
-```
-
-#### Command Line
-
-```bash
-python tools/predict_demo.py \
-    --weights best.pt \
-    --source test_images/ \
-    --save-dir outputs/ \
-    --conf 0.15
-```
-
-#### Visualization
-
-```python
-# Save visualization with boxes, severity labels, and mask overlays
 result.visualize().save("output.jpg")
 ```
 
-### Step 4: Export & Deploy
+</details>
 
-#### ONNX Export
+<details>
+<summary><b>CLI</b></summary>
+<br>
+
+```bash
+python tools/predict_demo.py --weights best.pt --source test_images/ --save-dir outputs/
+```
+
+</details>
+
+<br>
+
+### Step 4 · Export & Deploy
+
+<details>
+<summary><b>ONNX + TensorRT</b></summary>
+<br>
 
 ```python
 from sevseg_yolo.export import export_scoreyolo_onnx
-
-export_scoreyolo_onnx(
-    model.model,
-    "model.onnx",
-    imgsz=640,
-    opset=17,
-)
-```
-
-#### TensorRT Deployment
-
-```python
 from sevseg_yolo.tensorrt_deploy import deploy_scoreyolo
 
-deploy_scoreyolo(
-    "model.onnx",
-    "model.engine",
-    fp16=True,          # FP16 quantization
-    max_batch=4,
-)
+export_scoreyolo_onnx(model.model, "model.onnx", imgsz=640, opset=17)
+deploy_scoreyolo("model.onnx", "model.engine", fp16=True, max_batch=4)
 ```
 
-### Step 5: Evaluate Severity Scoring
+</details>
+
+<br>
+
+### Step 5 · Evaluate
 
 ```python
 from sevseg_yolo.evaluation import full_score_evaluation
 
 metrics = full_score_evaluation(pred_scores, gt_scores)
-print(f"MAE: {metrics['mae']:.3f}")
-print(f"Spearman ρ: {metrics['spearman_rho']:.3f}")
-print(f"±1 Tolerance Accuracy: {metrics['tolerance_acc']:.1%}")
+# → MAE, Spearman ρ, ±1 tolerance accuracy, per-class MAE, confusion matrix
 ```
 
----
-
-## 🎭 MaskGenerator: How It Works
-
-MaskGenerator is a **pure post-processing module** — it does not participate in training and runs entirely on CPU. It leverages the FPN features (P3/P4/P5) that the detection model already produces to derive pixel-level defect masks.
-
-**Core insight**: A backbone trained for defect detection implicitly learns to distinguish defects from normal regions in its feature maps. MaskGenerator converts this implicit knowledge into explicit binary masks.
-
-| Step | Operation | Purpose |
-|:---:|:---|:---|
-| 1 | **Scale-adaptive feature selection** | Choose best feature combination based on model scale (n/s: Layer2+P3+P4; m/l/x: P3+P4+P5) |
-| 2 | **Bimodal Top-K channel selection** | For each channel in the bbox crop, measure the gap between the mean of the darkest 30% and brightest 30% of pixels. Select channels with the largest gap — these best separate defect from normal. |
-| 3 | **Multi-scale weighted fusion** | Upsample activations from each scale to the highest resolution, then weighted average |
-| 4 | **Canny edge-guided upsampling** | Use original image edges to guide the low→high resolution upsampling. Edge zones keep sharp activation, smooth zones get denoised. |
-| 5 | **Adaptive binarization** | Convert continuous activation to binary mask via `adaptiveThreshold` |
-| 6 | **Morphology** | Close (fill holes) → Open (remove noise dots) → final {0, 1} binary mask |
+<br>
 
 ---
+
+<br>
+
+## 🎭 MaskGenerator
+
+A **pure post-processing module** — no training, runs on CPU. Converts implicit defect knowledge in FPN features into explicit binary masks.
+
+```mermaid
+graph LR
+    subgraph INPUT ["Input"]
+        A["P3/P4/P5 features"]
+        B["Original image crop"]
+    end
+    subgraph PIPELINE ["6-Step Pipeline"]
+        S1["1️⃣ Scale-adaptive<br>feature selection"]
+        S2["2️⃣ Bimodal Top-K<br>channel selection"]
+        S3["3️⃣ Multi-scale<br>weighted fusion"]
+        S4["4️⃣ Canny edge-guided<br>upsampling"]
+        S5["5️⃣ Adaptive<br>binarization"]
+        S6["6️⃣ Morphology"]
+    end
+    subgraph OUTPUT ["Output"]
+        O["Binary Mask {0,1}"]
+    end
+    A --> S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> O
+    B --> S4
+    style INPUT fill:#1a1a2e,stroke:#16213e,color:#fff
+    style PIPELINE fill:#533483,stroke:#16213e,color:#fff
+    style OUTPUT fill:#0a9396,stroke:#0a9396,color:#fff
+```
+
+**Why bimodal?** Channels with high spatial variance might capture background texture. Bimodal selection picks channels where the bbox contains two distinct brightness populations — directly measuring defect-vs-normal separation.
+
+<br>
+
+---
+
+<br>
 
 ## 📊 Model Zoo
 
-| Scale | Params | mAP@50 | MAE | Spearman ρ |
+| Scale | Params | mAP@50 | Score MAE ↓ | Spearman ρ ↑ |
 |:---:|:---:|:---:|:---:|:---:|
 | **n** | 2.57M | 0.513 | 1.317 | 0.742 |
 | **s** | 10.19M | 0.573 | 1.306 | 0.720 |
@@ -326,65 +359,65 @@ MaskGenerator is a **pure post-processing module** — it does not participate i
 | **l** | 26.59M | 0.626 | 1.297 | 0.709 |
 | **x** | 56.08M | 0.623 | 1.224 | 0.744 |
 
-> Results from 5-seed experiments with Gaussian NLL (σ=0.1, λ=0.05). See our paper for full details.
+<sub>5-seed averages · Gaussian NLL σ=0.1, λ=0.05</sub>
+
+<br>
 
 ---
+
+<br>
 
 ## 📁 Project Structure
 
 ```
 sevseg-yolo/
-├── sevseg_yolo/                 # Core package
-│   ├── model.py                 # SevSegYOLO: unified inference
-│   ├── mask_generator_v3.py     # Bimodal channel selection (default)
-│   ├── mask_generator_v2.py     # Variance channel selection (legacy)
-│   ├── convert.py               # LabelMe → YOLO+Score converter
-│   ├── evaluation.py            # Scoring metrics
-│   ├── export.py                # ONNX export
-│   ├── tensorrt_deploy.py       # TensorRT deployment
-│   ├── visualization.py         # Plotting utilities
-│   └── utils.py                 # Helpers
-├── ultralytics/                 # Modified Ultralytics
-│   ├── nn/modules/head.py       # ScoreHead + ScoreDetect
-│   ├── utils/loss.py            # Gaussian NLL loss
-│   ├── data/                    # 6-column label support
-│   └── cfg/models/26/           # Model YAML configs
-├── configs/train_score.yaml     # Training config template
-├── tools/                       # CLI demos
-├── pyproject.toml
-├── LICENSE
-├── CHANGELOG.md
-└── CONTRIBUTING.md
+├── sevseg_yolo/              # Core package
+│   ├── model.py              # Unified inference
+│   ├── mask_generator_v3.py  # Bimodal selection (default)
+│   ├── mask_generator_v2.py  # Variance selection (legacy)
+│   ├── convert.py            # Data converter
+│   ├── evaluation.py         # Metrics
+│   ├── export.py             # ONNX export
+│   ├── tensorrt_deploy.py    # TensorRT
+│   └── visualization.py      # Plots
+├── ultralytics/              # Modified Ultralytics
+│   ├── nn/modules/head.py    # ScoreHead + ScoreDetect
+│   ├── utils/loss.py         # Gaussian NLL loss
+│   └── cfg/models/26/        # Model configs
+├── configs/                  # Training templates
+├── tools/                    # CLI scripts
+└── pyproject.toml
 ```
 
----
+<br>
 
-## ⚠️ Important Notes
+## ⚠️ Notes
 
-- **MixUp = 0**: mandatory for severity training
-- **Severity range**: 0.0–10.0 (internally normalized to 0.0–1.0)
-- **MaskGenerator**: approximate masks from features, not pixel-perfect segmentation
-- **σ = 0.1**: Gaussian NLL fixed std, derived from ±1 annotation noise
-- **No opencv-contrib**: only standard `opencv-python` needed
+| | |
+|:---|:---|
+| **MixUp = 0** | Mandatory for severity training |
+| **Severity** | 0.0 – 10.0 (normalized to 0–1 internally) |
+| **MaskGenerator** | Approximate masks, not pixel-perfect |
+| **σ = 0.1** | From ±1 annotation noise |
+| **opencv-contrib** | Not needed |
 
----
+<br>
 
 ## 📖 Citation
 
 ```bibtex
 @article{sevseg_yolo_2026,
-  title={SevSeg-YOLO: A Unified Detection, Severity Scoring, and Annotation-Free
-         Approximate Segmentation Framework for Industrial Defects},
-  author={SevSeg-YOLO Contributors},
-  year={2026}
+  title  = {SevSeg-YOLO: A Unified Detection, Severity Scoring, and
+            Annotation-Free Approximate Segmentation Framework for Industrial Defects},
+  author = {SevSeg-YOLO Contributors},
+  year   = {2026}
 }
 ```
 
 ## 📜 License
 
-[AGPL-3.0](LICENSE). Modified Ultralytics code retains its original AGPL-3.0 license.
+[AGPL-3.0](LICENSE) · Modified Ultralytics code retains its original AGPL-3.0 license.
 
 ## 🙏 Acknowledgements
 
-- [Ultralytics](https://github.com/ultralytics/ultralytics) — YOLO26 foundation
-- [LabelMe](https://github.com/wkentaro/labelme) — Annotation tooling
+[Ultralytics](https://github.com/ultralytics/ultralytics) · [LabelMe](https://github.com/wkentaro/labelme)
